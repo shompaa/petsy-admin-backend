@@ -1,0 +1,20 @@
+[
+    {
+        "id": "1",
+        "code": "71052",
+        "name": "Comedero lento perro",
+        "description": "Comedero lento perro",
+        "stock": "3",
+        "costPrice": "837",
+        "salePrice": "2500"
+    },
+    {
+        "id": "2",
+        "code": "75089",
+        "name": "Cinturón de seguridad auto perro",
+        "description": "Cinturón de seguridad auto perro",
+        "stock": "4",
+        "costPrice": "891",
+        "salePrice": "3000"
+    }
+]
