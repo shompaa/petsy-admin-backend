@@ -22,8 +22,23 @@ const userSchema = new Schema<IUser>({
         enum: ['USER_ROLE', 'ADMIN_ROLE']
     },
     image: {
-        type: Schema.Types.ObjectId,
-        ref: "Image"
+        type: String,
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    },
+    deletedAt: {
+        type: Date,
+        default: null
+    },
+    disabled: {
+        type: Boolean,
+        default: false
     }
 });
 

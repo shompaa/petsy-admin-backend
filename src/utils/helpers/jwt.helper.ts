@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { IUser } from '../interfaces';
 
-export const generateToken = (user: IUser) => {
+export const generateToken = (user: IUser): Promise<string> => {
     return new Promise((resolve, reject) => {
         const payload = {
             id: user.id,
@@ -12,11 +12,11 @@ export const generateToken = (user: IUser) => {
 
         jwt.sign(payload, process.env.SECRET_TOKEN!, {
             expiresIn: '12h'
-        }, (err, token) => {
+        }, (err, token ) => {
             if (err) {
                 reject('Error generating token');
             } else {
-                resolve(token);
+                resolve(token as string);
             }
         });
     });

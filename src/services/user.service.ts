@@ -1,107 +1,104 @@
-import { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import { User } from "../models";
-import { generateToken } from "../utils";
+import { IUser } from "../utils";
+import bcrypt from 'bcrypt';
+import { IGetUsersParams, IGetUsersResponse } from '../utils/interfaces/user-group.interface';
 
-export const getUsers = async (_req: Request, res: Response) => {
-    const users = await User.find({}, 'name email role');
-    res.json({
-        status: 200,
+export const findAll = async ({ from, limit, search }: IGetUsersParams): Promise<IGetUsersResponse> => {
+    const regex = new RegExp(search!, 'i');
+    const params = search ? { $or: [{ name: regex }, { email: regex }] } : {};
+
+    console.log(search);
+    
+
+
+    const [users, total] = await Promise.all([
+        User.find(params)
+            .skip(from!)
+            .limit(limit!),
+        User.count(),
+    ]);
+
+    return {
         data: users,
-    });
+        total,
+    };
 }
 
-export const addUser = async (req: Request, res: Response) => {
+export const findById = async (id: string): Promise<IUser> => {
     try {
-        const { email } = req.body;
-        const existentUser = await User.findOne({ email });
+        const user = await User.findById(id);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const findByEmail = async (email: string): Promise<IUser> => {
+    try {
+        const regex = new RegExp(email, 'i');
+        const user = await User.findOne({ email: regex });
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const create = async (user: IUser): Promise<IUser> => {
+    try {
+        const { email } = user;
+        const existentUser = await User.findOne({ email });   
 
         if (existentUser) {
-            return res.status(400).json({
-                status: 400,
-                message: `${email} already exists`,
-            });
+            throw new Error(`${email} already exists`);
         }
 
-        const user = new User(req.body);
+        const newUser = new User(user);
         const salt = bcrypt.genSaltSync();
-        user.password = bcrypt.hashSync(user.password, salt);
-        await user.save();
-        const token = await generateToken(user);
-    
-        return res.json({
-            status: 200,
-            message: 'User created successfully',
-            data: {
-                user,
-                token
-            }
-        });
-    } catch (e) {
-        return res.status(500).json({
-            status: 500,
-            message: 'Internal server error'
-        });
+        user.password = bcrypt.hashSync(newUser.password, salt);
+        await newUser.save();
+        return newUser;
+    } catch (error) {
+        throw error;
     }
 }
 
-export const updateUser = async (req: Request, res: Response) => {
+export const update = async (id: string, user: IUser): Promise<IUser> => {
     try {
-        const { id } = req.params;
         const userDB = await User.findById(id);
         if(!userDB) {
-            return res.status(404).json({
-                status: 404,
-                message: 'User not found'
-            });
+            throw new Error("User not found");
         }
-        const {password, role, email, ...params} = req.body;
+        const {password, role, ...params} = user;
         
-        if(userDB.email != email) {
-            const existentUser = await User.findOne({ email });
+        if(userDB.email != params.email) {
+            const existentUser = await findByEmail(params.email);
             if (existentUser) {
-                return res.status(400).json({
-                    status: 400,
-                    message: `${email} already exists`
-                });
+                throw new Error(`${params.email} already exists`);
             }
         }
 
-        params.email = email;
-        const user = await User.findByIdAndUpdate(id, params, { new: true });
-
-        return res.json({
-            status: 200,
-            message: 'User updated successfully',
-            data: user
-        });
-    } catch (e) {
-        return res.status(500).json({
-            status: 500,
-            message: 'Internal server error'
-        });
+        const updatedUser = await User.findOneAndUpdate({ id }, params, { new: true });
+        return updatedUser || userDB;
+    } catch (error)  {
+        throw error;
     }
 }
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const remove = async (id: string): Promise<IUser> => {
     try {
-        const { id } = req.params;
-        const userDB = await User.findById(id);
-        if(!userDB) {
-            return res.status(404).json({
-                status: 404,
-                message: 'User not found'
-            });
+        const userDB = await findById(id);
+        if (!userDB) {
+            throw new Error("User not found");
         }
-        await User.findByIdAndDelete(id);
-        return res.json({
-            status: 200,
-            message: `${userDB.email} deleted successfully`
-        });
-    } catch (e) {
-        return res.status(500).json({
-            status: 500,
-            message: 'Internal server error'
-        });
+        const deletedUser = await User.findByIdAndUpdate({ id }, { disabled: true, deletedAt: Date.now()}, { new: true });
+        return deletedUser || userDB;
+    } catch (error) {
+        throw error;
     }
 }

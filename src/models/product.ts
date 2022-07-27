@@ -13,7 +13,8 @@ const productSchema = new Schema<IProduct>({
     },
     description: {
         type: String,
-        required: true
+        required: true,
+        default: ''
     },
     costPrice: {
         type: Number,
@@ -25,18 +26,51 @@ const productSchema = new Schema<IProduct>({
     },
     stock: {
         type: Number,
+        required: true,
+        default: 0
+    },
+    orderable: {
+        type: Boolean,
+        required: true,
+        default: true
+    },
+    category: {
+        type: String,
         required: true
     },
+    subCategory: {
+        type: String,
+    },
     images: [{
-        url: {
+        type: String,
+    }],
+    disabled: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    hasVariants: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    variants: [{
+        color: {
             type: String,
-            required: true
         },
-        alt: {
+        size: {
             type: String,
-            required: true
+        },
+        quantity: {
+            type: Number,
         }
     }]
 });
+
+productSchema.methods.toJSON = function () {
+    const { __v, _id, ...object} = this.toObject();
+    object.id = _id;
+    return object;
+}
 
 export const Product = model<IProduct>("Product", productSchema);
